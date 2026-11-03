@@ -1,0 +1,26 @@
+{{define "content"}}
+<h1 class="page-title">カテゴリー管理</h1>
+<div class="panel p-0 table-responsive mb-4">
+  <table class="table mb-0 align-middle">
+    <thead><tr><th>名前</th><th>色</th><th>サイズ</th><th>種類名</th><th>プリント</th><th></th></tr></thead>
+    <tbody>
+    {{range .Data.Cats}}
+      <tr><td>{{.Name}}</td>
+        <td>{{if .UsesColor}}○{{else}}–{{end}}</td><td>{{if .UsesSize}}○{{else}}–{{end}}</td>
+        <td>{{if .UsesVariantName}}○{{else}}–{{end}}</td><td>{{if .IsPrintable}}○{{else}}–{{end}}</td>
+        <td><a class="btn btn-sm btn-outline-primary" href="/admin/categories/{{.ID}}">編集</a></td></tr>
+    {{end}}
+    </tbody>
+  </table>
+</div>
+<h2 class="h6 fw-bold">カテゴリーを追加</h2>
+<form method="post" class="panel d-grid gap-3" style="max-width:560px">
+  {{template "csrf" .}}
+  <input class="form-control" name="name" placeholder="カテゴリー名(例: ステッカー)" required>
+  <div class="form-check"><input class="form-check-input" type="checkbox" name="uses_color" id="uc" checked><label class="form-check-label" for="uc">色を使う</label></div>
+  <div class="form-check"><input class="form-check-input" type="checkbox" name="uses_size" id="us"><label class="form-check-label" for="us">サイズを使う</label></div>
+  <div class="form-check"><input class="form-check-input" type="checkbox" name="uses_variant_name" id="uv"><label class="form-check-label" for="uv">種類名(デザイン違いなど)を使う</label></div>
+  <div class="form-check"><input class="form-check-input" type="checkbox" name="is_printable" id="ip" checked><label class="form-check-label" for="ip">プリント対象</label></div>
+  <button class="btn btn-primary">追加</button>
+</form>
+{{end}}

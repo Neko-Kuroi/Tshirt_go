@@ -1,0 +1,28 @@
+{{define "title"}}履歴 | 在庫管理{{end}}
+{{define "content"}}
+<h1 class="page-title">操作履歴</h1>
+<form class="mb-3 d-flex gap-2" method="get">
+  <select class="form-select" name="kind" onchange="this.form.submit()">
+    <option value="">すべての操作</option>
+    {{range .Data.Kinds}}<option value="{{.Key}}" {{if eq .Key $.Data.Kind}}selected{{end}}>{{.Label}}</option>{{end}}
+  </select>
+</form>
+<div class="panel p-0 table-responsive">
+  <table class="table table-sm mb-0 align-middle">
+    <thead><tr><th>日時</th><th>操作</th><th>対象</th><th class="text-end">増減</th><th>担当</th><th>メモ</th></tr></thead>
+    <tbody>
+    {{range .Data.Pagination.Items}}
+      <tr><td class="text-nowrap">{{jst .CreatedAt}}</td><td class="text-nowrap">{{.KindLabel}}</td>
+          <td>{{.TargetLabel}}</td><td class="text-end"><span class="num {{if gt .Delta 0}}delta-pos{{else}}delta-neg{{end}}">{{printf "%+d" .Delta}}</span></td>
+          <td class="text-nowrap">{{.Username}}</td><td>{{.Note}}</td></tr>
+    {{else}}
+      <tr><td colspan="6" class="text-muted">履歴がありません。</td></tr>
+    {{end}}
+    </tbody>
+  </table>
+</div>
+<div class="d-flex justify-content-between mt-3">
+  {{if .Data.Pagination.HasPrev}}<a class="btn btn-outline-primary" href="/history?page={{.Data.Pagination.PrevNum}}&kind={{.Data.Kind}}">← 新しい方</a>{{else}}<span></span>{{end}}
+  {{if .Data.Pagination.HasNext}}<a class="btn btn-outline-primary" href="/history?page={{.Data.Pagination.NextNum}}&kind={{.Data.Kind}}">古い方 →</a>{{end}}
+</div>
+{{end}}

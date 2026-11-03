@@ -1,0 +1,11 @@
+{{define "csrf"}}<input type="hidden" name="csrf_token" value="{{.CSRF}}">{{end}}
+{{define "qty_input"}}<label class="form-label" for="{{.Name}}">{{.Label}}</label>
+<div class="qty-step">
+  <button type="button" class="btn btn-outline-secondary" data-step="-10">-10</button>
+  <button type="button" class="btn btn-outline-secondary" data-step="-1">−</button>
+  <input class="form-control" id="{{.Name}}" name="{{.Name}}" inputmode="numeric" pattern="-?[0-9]*"
+         value="{{.Value}}" required {{if .Negative}}data-allow-negative="1"{{end}}>
+  <button type="button" class="btn btn-outline-secondary" data-step="1">＋</button>
+  <button type="button" class="btn btn-outline-secondary" data-step="10">+10</button>
+</div>
+{{end}}

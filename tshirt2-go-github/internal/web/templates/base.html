@@ -1,0 +1,51 @@
+{{define "base"}}<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{block "title" .}}在庫管理{{end}}</title>
+  <link rel="stylesheet" href="/static/vendor/bootstrap.min.css">
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+{{if .User}}
+<nav class="navbar navbar-expand-lg navbar-dark">
+  <div class="container-xl">
+    <a class="navbar-brand" href="/">在庫管理</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav"
+            aria-controls="nav" aria-expanded="false" aria-label="メニュー">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="nav">
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item"><a class="nav-link" href="/blank">無地在庫</a></li>
+        <li class="nav-item"><a class="nav-link" href="/printed">プリント済み</a></li>
+        <li class="nav-item"><a class="nav-link" href="/receive">入荷</a></li>
+        <li class="nav-item"><a class="nav-link" href="/convert">プリント変換</a></li>
+        <li class="nav-item"><a class="nav-link" href="/move">出荷・調整</a></li>
+        <li class="nav-item"><a class="nav-link" href="/notes">備考</a></li>
+        <li class="nav-item"><a class="nav-link" href="/history">履歴</a></li>
+        {{if .User.IsAdmin}}
+        <li class="nav-item"><a class="nav-link" href="/admin/items">品番</a></li>
+        <li class="nav-item"><a class="nav-link" href="/admin/categories">カテゴリー</a></li>
+        <li class="nav-item"><a class="nav-link" href="/admin/users">ユーザー</a></li>
+        {{end}}
+      </ul>
+      <form method="post" action="/logout" class="d-flex align-items-center gap-2">
+        {{template "csrf" .}}
+        <a class="text-white-50 small" href="/account/password">{{.User.Username}}</a>
+        <button class="btn btn-sm btn-outline-light">ログアウト</button>
+      </form>
+    </div>
+  </div>
+</nav>
+{{end}}
+<main class="container-xl pb-5">
+  {{range .Flashes}}<div class="alert alert-{{.Category}} mt-3 mb-0" role="alert">{{.Message}}</div>
+  {{end}}{{block "content" .}}{{end}}
+</main>
+<script src="/static/vendor/bootstrap.bundle.min.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>
+{{end}}

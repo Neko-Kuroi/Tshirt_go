@@ -1,0 +1,65 @@
+{{define "title"}}無地在庫 | 在庫管理{{end}}
+{{define "content"}}
+<div class="d-flex justify-content-between align-items-baseline flex-wrap gap-2">
+  <h1 class="page-title">無地在庫</h1>
+  <span class="d-flex gap-2">
+    {{if .Data.Cat}}<a class="btn btn-sm btn-outline-secondary" href="/export/blank.csv?category={{.Data.Cat.ID}}">CSV(この分類)</a>{{end}}
+    <a class="btn btn-sm btn-outline-secondary" href="/export/blank.csv">CSV(すべて)</a>
+  </span>
+</div>
+{{if not .Data.Cats}}
+  <div class="panel">カテゴリーがありません。</div>
+{{else}}
+<ul class="nav nav-pills mb-3 flex-nowrap overflow-auto">
+  {{range .Data.Cats}}
+  <li class="nav-item"><a class="nav-link{{if $.Data.Cat}}{{if eq .ID $.Data.Cat.ID}} active{{end}}{{end}} text-nowrap"
+      href="/blank?category={{.ID}}">{{.Name}}</a></li>
+  {{end}}
+</ul>
+<form class="mb-3 d-flex gap-2" method="get">
+  <input type="hidden" name="category" value="{{.Data.Cat.ID}}">
+  <input class="form-control" name="q" value="{{.Data.Q}}" placeholder="ブランド・品番・商品名で検索" type="search">
+  <button class="btn btn-primary">検索</button>
+</form>
+<div class="mb-3"><a class="btn btn-sm btn-outline-secondary" href="/blank/list?category={{.Data.Cat.ID}}">一覧で絞り込み・並べ替え</a></div>
+
+{{range .Data.Items}}
+<div class="panel mb-3">
+  <div class="d-flex justify-content-between align-items-baseline flex-wrap">
+    <h2 class="h6 fw-bold mb-2">{{.Item.Label}}{{if .Item.Style}} <span class="badge text-bg-light border">{{.Item.Style}}</span>{{end}}</h2>
+    <span class="text-muted small">合計 <span class="num">{{.Total}}</span></span>
+  </div>
+  {{if .Notes}}<div class="mb-2">{{template "note_list" .NoteList}}</div>{{end}}
+  {{if .Rows}}
+  {{$sizes := .Sizes}}
+  <div class="table-responsive">
+    <table class="table table-sm matrix mb-0">
+      <thead><tr>
+        <th>{{if $.Data.Cat.UsesSize}}色 / 種類{{else if $.Data.Cat.UsesVariantName}}種類名{{else}}色{{end}}</th>
+        {{range $sizes}}<th>{{if .}}{{.}}{{else}}数量{{end}}</th>{{end}}
+        {{if $.Data.Cat.UsesSize}}<th>計</th>{{end}}
+      </tr></thead>
+      <tbody>
+      {{range .Rows}}
+        {{$row := .}}
+        <tr><td>{{.Label}}{{if .HasNote}} <span class="badge text-bg-warning">備考</span>{{end}}</td>
+          {{range $s := $sizes}}{{with $v := index $row.Cells $s}}<td class="num {{if eq $v.Quantity 0}}zero{{else if le $v.Quantity 3}}low{{end}}">{{$v.Quantity}}</td>{{else}}<td class="num zero">–</td>{{end}}{{end}}
+          {{if $.Data.Cat.UsesSize}}<td class="num fw-bold">{{.Total}}</td>{{end}}
+        </tr>
+      {{end}}
+      </tbody>
+    </table>
+  </div>
+  {{else}}
+    <div class="text-muted small">在庫登録がありません。</div>
+  {{end}}
+  <div class="mt-2 d-flex flex-wrap gap-2 align-items-start">
+    <a class="btn btn-sm btn-outline-primary" href="/receive?item_id={{.Item.ID}}">この品番を入荷</a>
+    {{template "note_form" .NoteForm}}
+  </div>
+</div>
+{{else}}
+<div class="panel text-muted">該当する品番がありません。管理者は「品番」から登録できます。</div>
+{{end}}
+{{end}}
+{{end}}

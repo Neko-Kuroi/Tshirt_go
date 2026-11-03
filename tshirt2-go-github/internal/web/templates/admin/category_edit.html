@@ -1,0 +1,14 @@
+{{define "content"}}
+<h1 class="page-title">カテゴリー編集: {{.Data.Cat.Name}}</h1>
+<form method="post" class="panel d-grid gap-3" style="max-width:560px">
+  {{template "csrf" .}}
+  <div><label class="form-label">名前</label><input class="form-control" name="name" value="{{.Data.Cat.Name}}" required></div>
+  <div><label class="form-label">表示順</label><input class="form-control" name="sort_order" inputmode="numeric" value="{{.Data.Cat.SortOrder}}"></div>
+  <div class="form-check"><input class="form-check-input" type="checkbox" name="uses_color" id="uc"{{if .Data.Cat.UsesColor}} checked{{end}}><label class="form-check-label" for="uc">色を使う</label></div>
+  <div class="form-check"><input class="form-check-input" type="checkbox" name="uses_size" id="us"{{if .Data.Cat.UsesSize}} checked{{end}}><label class="form-check-label" for="us">サイズを使う</label></div>
+  <div class="form-check"><input class="form-check-input" type="checkbox" name="uses_variant_name" id="uv"{{if .Data.Cat.UsesVariantName}} checked{{end}}><label class="form-check-label" for="uv">種類名を使う</label></div>
+  <div class="form-check"><input class="form-check-input" type="checkbox" name="is_printable" id="ip"{{if .Data.Cat.IsPrintable}} checked{{end}}><label class="form-check-label" for="ip">プリント対象</label></div>
+  <div class="form-text">設定を変えても、登録済みの在庫データは消えません。</div>
+  <button class="btn btn-primary">保存</button>
+</form>
+{{end}}

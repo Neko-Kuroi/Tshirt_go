@@ -1,0 +1,49 @@
+{{define "content"}}
+<h1 class="page-title">ダッシュボード</h1>
+{{if not .Data.Cards}}
+  <div class="panel">カテゴリーがまだありません。<code>flask --app run seed</code> で初期カテゴリーを登録するか、管理画面から追加してください。</div>
+{{else}}
+<div class="row g-3">
+  {{range .Data.Cards}}
+  <div class="col-6 col-md-4 col-lg-3">
+    <a class="panel d-block text-decoration-none h-100" href="/blank?category={{.Category.ID}}">
+      <div class="fw-bold">{{.Category.Name}}</div>
+      <div class="text-muted small">無地</div><div class="fs-3 num text-start">{{.Blank}}</div>
+      {{if .Category.IsPrintable}}
+      <div class="text-muted small">プリント済み</div><div class="fs-5 num text-start">{{.Printed}}</div>
+      {{end}}
+    </a>
+  </div>
+  {{end}}
+</div>
+{{end}}
+
+<h2 class="page-title mt-4">未対応の備考
+  {{if .Data.NoteCount}}<span class="badge text-bg-warning">{{.Data.NoteCount}}</span>{{end}}</h2>
+<div class="panel">
+  {{range .Data.Notes}}
+  <div class="mb-2">
+    <span class="fw-bold">{{.ItemLabel}}</span>
+    <span class="badge text-bg-warning">{{if .Target}}{{.Target}}{{else}}品番全体{{end}}</span>
+    <div class="note-body note-clamp">{{.Body}}</div>
+  </div>
+  {{else}}
+  <span class="text-muted">未対応の備考はありません。</span>
+  {{end}}
+  <a href="/notes">備考の一覧{{if gt .Data.Remaining 0}}(残り {{.Data.Remaining}} 件){{end}}</a>
+</div>
+
+<h2 class="page-title mt-4">直近の操作</h2>
+<div class="panel p-0 table-responsive">
+  <table class="table mb-0 align-middle">
+    <tbody>
+    {{range .Data.Recent}}
+      <tr><td class="text-nowrap">{{jst .CreatedAt}}</td><td>{{.KindLabel}}</td>
+          <td>{{.TargetLabel}}</td><td class="text-end"><span class="num {{if gt .Delta 0}}delta-pos{{else}}delta-neg{{end}}">{{printf "%+d" .Delta}}</span></td><td>{{.Username}}</td></tr>
+    {{else}}
+      <tr><td class="text-muted">まだ操作がありません。「入荷」から登録してください。</td></tr>
+    {{end}}
+    </tbody>
+  </table>
+</div>
+{{end}}

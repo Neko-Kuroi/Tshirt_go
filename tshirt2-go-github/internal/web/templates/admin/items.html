@@ -1,0 +1,38 @@
+{{define "content"}}
+<h1 class="page-title">品番管理</h1>
+<ul class="nav nav-pills mb-3 flex-nowrap overflow-auto">
+  <li class="nav-item"><a class="nav-link{{if not .Data.CatID}} active{{end}} text-nowrap" href="/admin/items">すべて</a></li>
+  {{range .Data.Cats}}<li class="nav-item"><a class="nav-link{{if eq .ID $.Data.CatID}} active{{end}} text-nowrap" href="/admin/items?category={{.ID}}">{{.Name}}</a></li>{{end}}
+</ul>
+<div class="panel p-0 table-responsive mb-4">
+  <table class="table mb-0 align-middle">
+    <thead><tr><th>カテゴリー</th><th>ブランド</th><th>品番</th><th>商品名</th><th>タイプ</th><th></th></tr></thead>
+    <tbody>
+    {{range .Data.Items}}
+      <tr{{if not .IsActive}} class="text-muted"{{end}}><td>{{.CategoryName}}</td><td>{{.Brand}}</td><td>{{.ItemNo}}</td>
+        <td>{{.Name}}{{if not .IsActive}} (停止中){{end}}</td>
+        <td>{{.Style}}</td>
+        <td><a class="btn btn-sm btn-outline-primary" href="/admin/items/{{.ID}}">編集</a></td></tr>
+    {{else}}<tr><td colspan="6" class="text-muted">まだ品番がありません。下のフォームから追加してください。</td></tr>
+    {{end}}
+    </tbody>
+  </table>
+</div>
+<h2 class="h6 fw-bold">品番を追加</h2>
+<form method="post" class="panel d-grid gap-3" style="max-width:560px">
+  {{template "csrf" .}}
+  <select class="form-select" name="category_id" required>
+    <option value="">カテゴリーを選ぶ</option>
+    {{range .Data.Cats}}<option value="{{.ID}}"{{if eq .ID $.Data.CatID}} selected{{end}}>{{.Name}}</option>{{end}}
+  </select>
+  <input class="form-control" name="brand" placeholder="ブランド(例: Printstar)">
+  <input class="form-control" name="item_no" placeholder="品番(例: 085-CVT)">
+  <div class="form-text mt-0">ブランドか品番のどちらかは必須です。</div>
+  <input class="form-control" name="name" placeholder="商品名(任意。例: ヘビーウェイトTシャツ)">
+  <input class="form-control" name="style" list="style-list" maxlength="30" placeholder="タイプ(任意。例: 長袖・半袖)">
+  <datalist id="style-list">{{range .Data.Styles}}<option value="{{.}}">{{end}}</datalist>
+  <div class="form-text mt-0">在庫一覧で、タイプごとに絞り込み・並べ替えができます。表記ゆれを防ぐため、候補から選んでください。</div>
+  <div class="form-text mt-0">仕入れ先の変更や「入荷は最後」などのメモは、登録後に無地在庫の画面から「備考」として残せます。</div>
+  <button class="btn btn-primary">追加</button>
+</form>
+{{end}}

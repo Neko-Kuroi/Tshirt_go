@@ -1,0 +1,26 @@
+{{define "title"}}プリント変換 | 在庫管理{{end}}
+{{define "content"}}
+<h1 class="page-title">プリント変換</h1>
+<p class="text-muted">無地在庫を使って、プリント済み製品を作ります。ミスプリントで数が減った場合は、使用数と完成数を別々に入力します。</p>
+<form method="post" class="panel d-grid gap-3" style="max-width:560px">
+  {{template "csrf" .}}
+  <div><label class="form-label" for="variant_id">使う無地在庫</label>
+    <select class="form-select" id="variant_id" name="variant_id" required>
+      <option value="">選んでください</option>
+      {{range .Data.Variants}}
+      <option value="{{.ID}}" {{if eq $.Data.Form.VariantID (printf "%d" .ID)}}selected{{end}}>
+        [{{.CategoryName}}] {{.Label}} (在庫 {{.Quantity}})</option>
+      {{end}}
+    </select></div>
+  <div><label class="form-label" for="design">デザイン</label>
+    <select class="form-select" id="design" name="design">
+      <option value="">新しいデザインを入力 ↓</option>
+      {{range .Data.Designs}}<option value="{{.Name}}" {{if eq $.Data.Form.Design .Name}}selected{{end}}>{{.Name}}</option>{{end}}
+    </select>
+    <input class="form-control mt-2" name="design_new" placeholder="新しいデザイン名" value="{{.Data.Form.DesignNew}}"></div>
+  <div>{{template "qty_input" .Data.Used}}</div>
+  <div>{{template "qty_input" .Data.Output}}</div>
+  <div><label class="form-label">メモ</label><input class="form-control" name="note" value="{{.Data.Form.Note}}"></div>
+  <button class="btn btn-primary btn-lg">変換する</button>
+</form>
+{{end}}

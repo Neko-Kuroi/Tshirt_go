@@ -1,0 +1,40 @@
+{{define "note_list"}}{{range .Notes}}
+<div class="note{{if .IsResolved}} note-done{{end}}">
+  <div class="d-flex flex-wrap align-items-center gap-2">
+    <span class="badge text-bg-warning">{{if .Target}}{{.Target}}{{else}}品番全体{{end}}</span>
+    {{if .IsResolved}}<span class="badge text-bg-secondary">対応済み</span>{{end}}
+    <span class="text-muted small">{{.Username}} ・ {{jst .CreatedAt}}</span>
+  </div>
+  <div class="note-body">{{.Body}}</div>
+  <div class="d-flex gap-2 mt-1">
+    <form method="post" action="/notes/{{.ID}}/resolve">
+      <input type="hidden" name="csrf_token" value="{{$.CSRF}}"><input type="hidden" name="back" value="{{$.Back}}">
+      <button class="btn btn-sm btn-outline-secondary">{{if .IsResolved}}未対応に戻す{{else}}対応済みにする{{end}}</button>
+    </form>
+    {{if $.IsAdmin}}
+    <form method="post" action="/notes/{{.ID}}/delete"
+          onsubmit="return confirm('この備考を削除しますか?')">
+      <input type="hidden" name="csrf_token" value="{{$.CSRF}}"><input type="hidden" name="back" value="{{$.Back}}">
+      <button class="btn btn-sm btn-outline-danger">削除</button>
+    </form>
+    {{end}}
+  </div>
+</div>
+{{end}}{{end}}
+
+{{define "note_form"}}
+<details class="note-add mt-2">
+  <summary class="btn btn-sm btn-outline-primary">備考を追加</summary>
+  <form method="post" action="/notes" class="d-grid gap-2 mt-2" style="max-width:560px">
+    <input type="hidden" name="csrf_token" value="{{.CSRF}}">
+    <input type="hidden" name="item_id" value="{{.ItemID}}">
+    <input type="hidden" name="back" value="{{.Back}}">
+    <input class="form-control" name="target" list="targets-{{.ItemID}}" maxlength="64"
+           placeholder="対象の色・種類(空欄なら品番全体)">
+    <datalist id="targets-{{.ItemID}}">{{range .Targets}}<option value="{{.}}">{{end}}</datalist>
+    <textarea class="form-control" name="body" rows="3" maxlength="1000" required
+              placeholder="例: これで入荷は最後。この色は、別ブランドの同じ色か近い色を、仕入れ先を変えて探す。"></textarea>
+    <button class="btn btn-primary">追加</button>
+  </form>
+</details>
+{{end}}

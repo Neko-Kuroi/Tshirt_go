@@ -1,0 +1,39 @@
+{{define "title"}}入荷 | 在庫管理{{end}}
+{{define "content"}}
+<h1 class="page-title">入荷登録</h1>
+{{if and .Data.Selected .Data.ItemNotes}}
+<div class="panel mb-3" style="max-width:560px">
+  <div class="fw-bold mb-2">この品番の備考(未対応)</div>
+  {{template "note_list" .Data.NoteList}}
+</div>
+{{end}}
+<form method="post" class="panel d-grid gap-3" style="max-width:560px">
+  {{template "csrf" .}}
+  <div>
+    <label class="form-label" for="item_id">品番</label>
+    <select class="form-select" id="item_id" name="item_id" required>
+      <option value="">選んでください</option>
+      {{range .Data.Items}}
+      <option value="{{.ID}}" {{if eq .ID $.Data.Selected}}selected{{end}}
+        data-uses-color="{{if .UsesColor}}1{{else}}0{{end}}"
+        data-uses-size="{{if .UsesSize}}1{{else}}0{{end}}"
+        data-uses-variant-name="{{if .UsesVariantName}}1{{else}}0{{end}}">
+        [{{.CategoryName}}] {{.Label}}</option>
+      {{end}}
+    </select>
+    {{if not .Data.Items}}<div class="form-text">品番が未登録です。管理者が「品番」から登録してください。</div>{{end}}
+  </div>
+  <div id="f_variant_name"><label class="form-label">種類名(デザイン名など)</label>
+    <input class="form-control" name="variant_name" value="{{.Data.Form.VariantName}}"></div>
+  <div id="f_color"><label class="form-label">色</label>
+    <input class="form-control" name="color" list="colors" value="{{.Data.Form.Color}}">
+    <datalist id="colors">{{range .Data.Colors}}<option value="{{.}}">{{end}}</datalist></div>
+  <div id="f_size"><label class="form-label">サイズ</label>
+    <input class="form-control" name="size" list="sizes" value="{{.Data.Form.Size}}">
+    <datalist id="sizes"><option value="S"><option value="M"><option value="L"><option value="XL"><option value="XXL"><option value="3XL"><option value="FREE"></datalist></div>
+  <div>{{template "qty_input" .Data.Qty}}</div>
+  <div><label class="form-label">メモ(納品書番号など)</label>
+    <input class="form-control" name="note" value="{{.Data.Form.Note}}"></div>
+  <button class="btn btn-primary btn-lg">入荷を登録</button>
+</form>
+{{end}}

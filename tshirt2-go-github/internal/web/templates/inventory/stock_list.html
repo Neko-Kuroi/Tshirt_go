@@ -1,0 +1,92 @@
+{{define "title"}}無地在庫(一覧) | 在庫管理{{end}}
+{{define "content"}}
+<div class="d-flex justify-content-between align-items-baseline flex-wrap gap-2">
+  <h1 class="page-title">無地在庫(一覧)</h1>
+  <a class="btn btn-sm btn-outline-secondary" href="/blank">品番ごとの表に戻る</a>
+</div>
+
+<form method="get" class="panel mb-3">
+  <div class="row g-2">
+    <div class="col-6 col-md-3">
+      <label class="form-label small mb-1" for="f-category">カテゴリー</label>
+      <select class="form-select form-select-sm" id="f-category" name="category">
+        <option value="">すべて</option>
+        {{range .Data.Cats}}<option value="{{.ID}}"{{if eq .ID $.Data.F.Category}} selected{{end}}>{{.Name}}</option>{{end}}
+      </select>
+    </div>
+    <div class="col-6 col-md-3">
+      <label class="form-label small mb-1" for="f-style">タイプ(長袖・半袖など)</label>
+      <select class="form-select form-select-sm" id="f-style" name="style">
+        <option value="">すべて</option>
+        {{range .Data.Opts.Styles}}<option value="{{.}}"{{if eq . $.Data.F.Style}} selected{{end}}>{{.}}</option>{{end}}
+      </select>
+    </div>
+    <div class="col-6 col-md-3">
+      <label class="form-label small mb-1" for="f-color">色・種類</label>
+      <select class="form-select form-select-sm" id="f-color" name="color">
+        <option value="">すべて</option>
+        {{range .Data.Opts.Colors}}<option value="{{.}}"{{if eq . $.Data.F.Color}} selected{{end}}>{{.}}</option>{{end}}
+      </select>
+    </div>
+    <div class="col-6 col-md-3">
+      <label class="form-label small mb-1" for="f-size">サイズ</label>
+      <select class="form-select form-select-sm" id="f-size" name="size">
+        <option value="">すべて</option>
+        {{range .Data.Opts.Sizes}}<option value="{{.}}"{{if eq . $.Data.F.Size}} selected{{end}}>{{.}}</option>{{end}}
+      </select>
+    </div>
+    <div class="col-12 col-md-6">
+      <label class="form-label small mb-1" for="f-q">ブランド・品番・商品名</label>
+      <input class="form-control form-control-sm" id="f-q" name="q" value="{{.Data.F.Q}}" type="search" maxlength="100">
+    </div>
+    <div class="col-6 col-md-3">
+      <label class="form-label small mb-1" for="f-sort">並べ替え</label>
+      <select class="form-select form-select-sm" id="f-sort" name="sort">
+        {{range .Data.Sorts}}<option value="{{.Key}}"{{if eq .Key $.Data.F.Sort}} selected{{end}}>{{.Label}}</option>{{end}}
+      </select>
+    </div>
+    <div class="col-6 col-md-3">
+      <label class="form-label small mb-1" for="f-dir">順序</label>
+      <select class="form-select form-select-sm" id="f-dir" name="dir">
+        <option value="asc"{{if eq .Data.F.Dir "asc"}} selected{{end}}>昇順(小さい順・あいうえお順)</option>
+        <option value="desc"{{if eq .Data.F.Dir "desc"}} selected{{end}}>降順(大きい順)</option>
+      </select>
+    </div>
+  </div>
+  <div class="form-check mt-2">
+    <input class="form-check-input" type="checkbox" name="in_stock" value="1" id="f-instock"{{if .Data.F.InStock}} checked{{end}}>
+    <label class="form-check-label small" for="f-instock">在庫があるものだけ</label>
+  </div>
+  <div class="mt-2 d-flex gap-2">
+    <button class="btn btn-primary btn-sm">表示</button>
+    <a class="btn btn-outline-secondary btn-sm" href="/blank/list">リセット</a>
+  </div>
+</form>
+
+<div class="text-muted small mb-2">
+  <span class="num">{{.Data.Result.Count}}</span> 件 / 合計 <span class="num">{{.Data.Result.TotalQty}}</span>
+  {{if .Data.Result.Truncated}}<span class="text-danger ms-2">先頭の{{len .Data.Result.Rows}}件だけ表示しています。条件を絞り込んでください。</span>{{end}}
+</div>
+<div class="panel p-0 table-responsive">
+  <table class="table table-sm matrix align-middle mb-0">
+    <thead><tr>
+      {{range .Data.Sorts}}{{$l := index $.Data.Links .Key}}<th class="{{if eq .Key "qty"}}text-end {{end}}text-nowrap"><a class="text-decoration-none" href="{{$l.URL}}">{{.Label}} {{$l.Mark}}</a></th>
+      {{end}}
+    </tr></thead>
+    <tbody>
+    {{range .Data.Result.Rows}}
+      <tr class="{{if not .ItemActive}}text-muted{{end}}">
+        <td class="text-nowrap">{{.CategoryName}}</td>
+        <td class="text-nowrap">{{if .Style}}{{.Style}}{{else}}–{{end}}</td>
+        <td>{{.ItemLabel}}{{if not .ItemActive}} <span class="badge text-bg-secondary">停止中</span>{{end}}</td>
+        <td class="text-nowrap">{{if .Spec}}{{.Spec}}{{else}}–{{end}}</td>
+        <td class="text-nowrap">{{if .Size}}{{.Size}}{{else}}–{{end}}</td>
+        <td class="num {{if eq .Quantity 0}}zero{{else if le .Quantity 3}}low{{end}}">{{.Quantity}}</td>
+      </tr>
+    {{else}}
+      <tr><td colspan="6" class="text-muted">該当する在庫がありません。</td></tr>
+    {{end}}
+    </tbody>
+  </table>
+</div>
+{{end}}

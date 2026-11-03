@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"hash"
 	"math/big"
+	"runtime/debug"
 	"strconv"
 	"strings"
 
@@ -37,6 +38,23 @@ const (
 // ErrUnrecognizedHash は、保存されたハッシュの形式が分からないとき。
 var ErrUnrecognizedHash = errors.New("auth: unrecognized password hash format")
 
+// deriveSem は、パスワード派生 (scrypt/pbkdf2) の同時実行数を絞る。
+// scrypt は1回で約34MB の作業領域を使うため、無制限に並行すると、
+// ログインが集中したときにメモリが同時実行数の分だけ跳ね上がる。
+var deriveSem = make(chan struct{}, 4)
+
+// deriveKey は鍵派生を1回実行し、終わったら作業領域を OS に返す。
+// 既定の GC は割り当てが進んだときにしか走らないので、待機の多い
+// サーバーでは、解放済みの作業領域 (数十MB) が回収されないまま
+// RSS に残り続ける。ログインのような低頻度の処理なので、毎回
+// FreeOSMemory で確実に返す。
+func deriveKey(f func() ([]byte, error)) ([]byte, error) {
+	deriveSem <- struct{}{}
+	defer func() { <-deriveSem }()
+	defer debug.FreeOSMemory()
+	return f()
+}
+
 // Hash は新しいパスワードのハッシュを、Werkzeug 互換の scrypt 形式で作る。
 func Hash(password string) (string, error) {
 	salt := make([]byte, saltLen)
@@ -47,7 +65,9 @@ func Hash(password string) (string, error) {
 		}
 		salt[i] = saltChars[n.Int64()]
 	}
-	key, err := scrypt.Key([]byte(password), salt, scryptN, scryptR, scryptP, scryptKeyLen)
+	key, err := deriveKey(func() ([]byte, error) {
+		return scrypt.Key([]byte(password), salt, scryptN, scryptR, scryptP, scryptKeyLen)
+	})
 	if err != nil {
 		return "", err
 	}
@@ -84,7 +104,9 @@ func Verify(stored, password string) (bool, error) {
 		}
 		// Werkzeug は、salt の文字列のバイト列をそのまま使う (base64 デコードしない)。
 		// 派生鍵の長さは、保存済みのハッシュの長さから決める。
-		got, err = scrypt.Key([]byte(password), []byte(salt), n, r, p, len(wantBytes))
+		got, err = deriveKey(func() ([]byte, error) {
+			return scrypt.Key([]byte(password), []byte(salt), n, r, p, len(wantBytes))
+		})
 		if err != nil {
 			return false, err
 		}
@@ -107,7 +129,12 @@ func Verify(stored, password string) (bool, error) {
 		if e != nil || its <= 0 || its > maxPBKDF2Its {
 			return false, ErrUnrecognizedHash
 		}
-		got = pbkdf2.Key([]byte(password), []byte(salt), its, len(wantBytes), h)
+		got, err = deriveKey(func() ([]byte, error) {
+			return pbkdf2.Key([]byte(password), []byte(salt), its, len(wantBytes), h), nil
+		})
+		if err != nil {
+			return false, err
+		}
 	default:
 		return false, ErrUnrecognizedHash
 	}

@@ -50,6 +50,39 @@ sizes = fixed + generated
 (out / "sizekey.json").write_text(
     json.dumps({"input": sizes, "sorted": sorted(sizes, key=size_key)}, ensure_ascii=False, indent=0),
     encoding="utf-8")
+# ---- jst フィルタ (日時表示) ----
+# フィルタは create_app の中にあるので、テスト用設定でアプリを作って取り出す。
+# 期待値は修正済み Python 版 (年つき表示・形の縛り・変換できない値はそのまま) の出力。
+import os  # noqa: E402
+import tempfile  # noqa: E402
+
+from app import create_app  # noqa: E402
+from config import TestConfig  # noqa: E402
+
+
+class _VecCfg(TestConfig):
+    DATABASE = os.path.join(tempfile.mkdtemp(), "vectors.db")
+
+
+_jst = create_app(_VecCfg).jinja_env.filters["jst"]
+jst_inputs = [
+    "2026-11-21 15:13:26", "2026-01-01 00:00:00", "2025-12-31 14:59:59",
+    "2024-12-31 15:00:00", "2028-02-29 15:00:00", "0001-01-01 00:00:00",
+    "2026-11-21T15:13:26", "2026-11-21 15:13:26.123456",
+    "2026-10-04 00:20:10.887356", "2026-10-04 00:20:10.887356+09:00",
+    "2026-01-01 09:00:00+09:00", "2026-01-01 00:00:00+00:00",
+    "2026-11-21T15:13:26Z", "9999-12-31 14:59:59",
+    "", "garbage", "not a date",
+    "2026-13-01 00:00:00", "2026-02-29 00:00:00", "2026-11-21 24:00:00",
+    "2026-11-21", "20261121", "2026-W46-6", "2026-1-1 1:2:3",
+    "0000-01-01 00:00:00", "9999-12-31 15:00:00",
+    "2026-11-21 15:13:26,5",        # 小数秒のカンマ区切りは変換しない
+    "2026-11-21 15:13:26+0900",     # オフセットはコロン付きだけ
+    "2026-11-21 15:13:26 +09:00",   # オフセットの前の空白は不可
+]
+jst = [{"in": s, "out": _jst(s)} for s in jst_inputs]
+(out / "jst.json").write_text(json.dumps(jst, ensure_ascii=False, indent=0), encoding="utf-8")
+
 # ---- safe_next ----
 # Go 版は、制御文字を含むもの・"/\\" で始まるものを、Python 版より厳しく拒否する (SafeNext のコメント参照)。
 # そのため、この一覧は「Python 版と同じ結果になるはずの入力」だけ。厳しくした分は Go 側のテストに別に書く。

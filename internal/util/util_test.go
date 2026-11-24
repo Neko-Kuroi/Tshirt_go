@@ -185,19 +185,17 @@ func TestTruncateRunes(t *testing.T) {
 	}
 }
 
-func TestFormatJST(t *testing.T) {
-	cases := map[string]string{
-		"2026-10-31 15:00:00":        "11/01 00:00", // UTC 15:00 = JST 翌日 0:00
-		"2026-10-04 00:20:10.887356": "10/04 09:20", // SQLAlchemy 版が書いていた小数秒付き
-		"2026-01-01T00:00:00":        "01/01 09:00",
-		"2026-01-01 00:00:00+00:00":  "01/01 09:00",
-		"2026-01-01 09:00:00+09:00":  "01/01 09:00", // オフセット付きはその時刻を JST に
-		"":                           "",
-		"not a date":                 "not a date",
+func TestFormatJSTMatchesPython(t *testing.T) {
+	// 期待値は修正済み Flask 版 jst フィルタの出力 (tools/gen_util_vectors.py が作る)。
+	// 年つき表示・変換できる形の縛り・変換できない値はそのまま、まで Python と一致させる。
+	var cases []struct{ In, Out string }
+	loadJSON(t, "jst.json", &cases)
+	if len(cases) < 25 {
+		t.Fatalf("too few vectors: %d", len(cases))
 	}
-	for in, want := range cases {
-		if got := FormatJST(in); got != want {
-			t.Errorf("FormatJST(%q) = %q, want %q", in, got, want)
+	for _, c := range cases {
+		if got := FormatJST(c.In); got != c.Out {
+			t.Errorf("FormatJST(%q) = %q, want %q (Python)", c.In, got, c.Out)
 		}
 	}
 }

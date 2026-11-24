@@ -66,7 +66,7 @@ func TestDashboardCardsNotesAndRecent(t *testing.T) {
 	contains(t, r, `<div class="fs-3 num text-start">5</div>`)
 	contains(t, r, `<span class="badge text-bg-warning">1</span>`) // 未対応の備考の件数
 	contains(t, r, "白は補充注意")
-	contains(t, r, "11/01 09:00") // UTC 00:00 → JST
+	contains(t, r, "2026/11/01 09:00") // UTC 00:00 → JST (年つき表示)
 	contains(t, r, "入荷")
 	contains(t, r, "Fruit 001 ヘビーウェイトT | 白 / M")
 	contains(t, r, `<span class="num delta-pos">&#43;10</span>`) // html/template が '+' を &#43; にする (表示は +10)

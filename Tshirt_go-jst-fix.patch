@@ -1,0 +1,265 @@
+diff --git a/internal/util/jst.go b/internal/util/jst.go
+index 416832a..0f1657f 100644
+--- a/internal/util/jst.go
++++ b/internal/util/jst.go
+@@ -1,6 +1,9 @@
+ package util
+ 
+-import "time"
++import (
++	"regexp"
++	"time"
++)
+ 
+ // JST は日本時間。DB は UTC で保存し、表示だけ JST にする。
+ var JST = time.FixedZone("JST", 9*60*60)
+@@ -12,15 +15,29 @@ var utcLayouts = []string{
+ 	"2006-01-02T15:04:05Z07:00",
+ }
+ 
+-// FormatJST は UTC の日時文字列を、JST の "MM/dd HH:mm" にする (Flask 版 jst フィルタ)。
+-// 空文字は空文字。解釈できない値は、そのまま返す (Python 版はここで例外になる)。
++// dbDatetimeShape は、変換してよい DB 日時の形 (Flask 版 _DB_DATETIME_SHAPE と同じ)。
++// Go の time.Parse は小数秒のカンマ区切りなど Python 側で変換しない形も通して
++// しまうので、先にこの形で縛る。
++var dbDatetimeShape = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})?$`)
++
++// FormatJST は UTC の日時文字列を、JST の "YYYY/MM/DD HH:mm" にする (Flask 版 jst フィルタ)。
++// 空文字は空文字。変換できるのは dbDatetimeShape の形だけ (年 0000 は Python の
++// datetime の範囲外なので変換しない)。変換すると年が 1〜9999 の範囲を超える値も、
++// 解釈できない値と同じく、そのまま返す。
+ func FormatJST(v string) string {
+ 	if v == "" {
+ 		return ""
+ 	}
++	if !dbDatetimeShape.MatchString(v) || v[:4] == "0000" {
++		return v
++	}
+ 	for _, layout := range utcLayouts {
+ 		if t, err := time.ParseInLocation(layout, v, time.UTC); err == nil {
+-			return t.In(JST).Format("01/02 15:04")
++			j := t.In(JST)
++			if j.Year() < 1 || j.Year() > 9999 {
++				return v
++			}
++			return j.Format("2006/01/02 15:04")
+ 		}
+ 	}
+ 	return v
+diff --git a/internal/util/testdata/jst.json b/internal/util/testdata/jst.json
+new file mode 100644
+index 0000000..c3466ce
+--- /dev/null
++++ b/internal/util/testdata/jst.json
+@@ -0,0 +1,118 @@
++[
++{
++"in": "2026-11-21 15:13:26",
++"out": "2026/11/22 00:13"
++},
++{
++"in": "2026-01-01 00:00:00",
++"out": "2026/01/01 09:00"
++},
++{
++"in": "2025-12-31 14:59:59",
++"out": "2025/12/31 23:59"
++},
++{
++"in": "2024-12-31 15:00:00",
++"out": "2025/01/01 00:00"
++},
++{
++"in": "2028-02-29 15:00:00",
++"out": "2028/03/01 00:00"
++},
++{
++"in": "0001-01-01 00:00:00",
++"out": "0001/01/01 09:00"
++},
++{
++"in": "2026-11-21T15:13:26",
++"out": "2026/11/22 00:13"
++},
++{
++"in": "2026-11-21 15:13:26.123456",
++"out": "2026/11/22 00:13"
++},
++{
++"in": "2026-10-04 00:20:10.887356",
++"out": "2026/10/04 09:20"
++},
++{
++"in": "2026-10-04 00:20:10.887356+09:00",
++"out": "2026/10/04 00:20"
++},
++{
++"in": "2026-01-01 09:00:00+09:00",
++"out": "2026/01/01 09:00"
++},
++{
++"in": "2026-01-01 00:00:00+00:00",
++"out": "2026/01/01 09:00"
++},
++{
++"in": "2026-11-21T15:13:26Z",
++"out": "2026/11/22 00:13"
++},
++{
++"in": "9999-12-31 14:59:59",
++"out": "9999/12/31 23:59"
++},
++{
++"in": "",
++"out": ""
++},
++{
++"in": "garbage",
++"out": "garbage"
++},
++{
++"in": "not a date",
++"out": "not a date"
++},
++{
++"in": "2026-13-01 00:00:00",
++"out": "2026-13-01 00:00:00"
++},
++{
++"in": "2026-02-29 00:00:00",
++"out": "2026-02-29 00:00:00"
++},
++{
++"in": "2026-11-21 24:00:00",
++"out": "2026-11-21 24:00:00"
++},
++{
++"in": "2026-11-21",
++"out": "2026-11-21"
++},
++{
++"in": "20261121",
++"out": "20261121"
++},
++{
++"in": "2026-W46-6",
++"out": "2026-W46-6"
++},
++{
++"in": "2026-1-1 1:2:3",
++"out": "2026-1-1 1:2:3"
++},
++{
++"in": "0000-01-01 00:00:00",
++"out": "0000-01-01 00:00:00"
++},
++{
++"in": "9999-12-31 15:00:00",
++"out": "9999-12-31 15:00:00"
++},
++{
++"in": "2026-11-21 15:13:26,5",
++"out": "2026-11-21 15:13:26,5"
++},
++{
++"in": "2026-11-21 15:13:26+0900",
++"out": "2026-11-21 15:13:26+0900"
++},
++{
++"in": "2026-11-21 15:13:26 +09:00",
++"out": "2026-11-21 15:13:26 +09:00"
++}
++]
+\ No newline at end of file
+diff --git a/internal/util/util_test.go b/internal/util/util_test.go
+index 8f79421..d1cdb65 100644
+--- a/internal/util/util_test.go
++++ b/internal/util/util_test.go
+@@ -185,19 +185,17 @@ func TestTruncateRunes(t *testing.T) {
+ 	}
+ }
+ 
+-func TestFormatJST(t *testing.T) {
+-	cases := map[string]string{
+-		"2026-10-31 15:00:00":        "11/01 00:00", // UTC 15:00 = JST 翌日 0:00
+-		"2026-10-04 00:20:10.887356": "10/04 09:20", // SQLAlchemy 版が書いていた小数秒付き
+-		"2026-01-01T00:00:00":        "01/01 09:00",
+-		"2026-01-01 00:00:00+00:00":  "01/01 09:00",
+-		"2026-01-01 09:00:00+09:00":  "01/01 09:00", // オフセット付きはその時刻を JST に
+-		"":                           "",
+-		"not a date":                 "not a date",
+-	}
+-	for in, want := range cases {
+-		if got := FormatJST(in); got != want {
+-			t.Errorf("FormatJST(%q) = %q, want %q", in, got, want)
++func TestFormatJSTMatchesPython(t *testing.T) {
++	// 期待値は修正済み Flask 版 jst フィルタの出力 (tools/gen_util_vectors.py が作る)。
++	// 年つき表示・変換できる形の縛り・変換できない値はそのまま、まで Python と一致させる。
++	var cases []struct{ In, Out string }
++	loadJSON(t, "jst.json", &cases)
++	if len(cases) < 25 {
++		t.Fatalf("too few vectors: %d", len(cases))
++	}
++	for _, c := range cases {
++		if got := FormatJST(c.In); got != c.Out {
++			t.Errorf("FormatJST(%q) = %q, want %q (Python)", c.In, got, c.Out)
+ 		}
+ 	}
+ }
+diff --git a/internal/web/handlers_read_test.go b/internal/web/handlers_read_test.go
+index e4d2527..abf5b4b 100644
+--- a/internal/web/handlers_read_test.go
++++ b/internal/web/handlers_read_test.go
+@@ -66,7 +66,7 @@ func TestDashboardCardsNotesAndRecent(t *testing.T) {
+ 	contains(t, r, `<div class="fs-3 num text-start">5</div>`)
+ 	contains(t, r, `<span class="badge text-bg-warning">1</span>`) // 未対応の備考の件数
+ 	contains(t, r, "白は補充注意")
+-	contains(t, r, "11/01 09:00") // UTC 00:00 → JST
++	contains(t, r, "2026/11/01 09:00") // UTC 00:00 → JST (年つき表示)
+ 	contains(t, r, "入荷")
+ 	contains(t, r, "Fruit 001 ヘビーウェイトT | 白 / M")
+ 	contains(t, r, `<span class="num delta-pos">&#43;10</span>`) // html/template が '+' を &#43; にする (表示は +10)
+diff --git a/tools/gen_util_vectors.py b/tools/gen_util_vectors.py
+index c8358e3..7a4a655 100644
+--- a/tools/gen_util_vectors.py
++++ b/tools/gen_util_vectors.py
+@@ -50,6 +50,39 @@ sizes = fixed + generated
+ (out / "sizekey.json").write_text(
+     json.dumps({"input": sizes, "sorted": sorted(sizes, key=size_key)}, ensure_ascii=False, indent=0),
+     encoding="utf-8")
++# ---- jst フィルタ (日時表示) ----
++# フィルタは create_app の中にあるので、テスト用設定でアプリを作って取り出す。
++# 期待値は修正済み Python 版 (年つき表示・形の縛り・変換できない値はそのまま) の出力。
++import os  # noqa: E402
++import tempfile  # noqa: E402
++
++from app import create_app  # noqa: E402
++from config import TestConfig  # noqa: E402
++
++
++class _VecCfg(TestConfig):
++    DATABASE = os.path.join(tempfile.mkdtemp(), "vectors.db")
++
++
++_jst = create_app(_VecCfg).jinja_env.filters["jst"]
++jst_inputs = [
++    "2026-11-21 15:13:26", "2026-01-01 00:00:00", "2025-12-31 14:59:59",
++    "2024-12-31 15:00:00", "2028-02-29 15:00:00", "0001-01-01 00:00:00",
++    "2026-11-21T15:13:26", "2026-11-21 15:13:26.123456",
++    "2026-10-04 00:20:10.887356", "2026-10-04 00:20:10.887356+09:00",
++    "2026-01-01 09:00:00+09:00", "2026-01-01 00:00:00+00:00",
++    "2026-11-21T15:13:26Z", "9999-12-31 14:59:59",
++    "", "garbage", "not a date",
++    "2026-13-01 00:00:00", "2026-02-29 00:00:00", "2026-11-21 24:00:00",
++    "2026-11-21", "20261121", "2026-W46-6", "2026-1-1 1:2:3",
++    "0000-01-01 00:00:00", "9999-12-31 15:00:00",
++    "2026-11-21 15:13:26,5",        # 小数秒のカンマ区切りは変換しない
++    "2026-11-21 15:13:26+0900",     # オフセットはコロン付きだけ
++    "2026-11-21 15:13:26 +09:00",   # オフセットの前の空白は不可
++]
++jst = [{"in": s, "out": _jst(s)} for s in jst_inputs]
++(out / "jst.json").write_text(json.dumps(jst, ensure_ascii=False, indent=0), encoding="utf-8")
++
+ # ---- safe_next ----
+ # Go 版は、制御文字を含むもの・"/\\" で始まるものを、Python 版より厳しく拒否する (SafeNext のコメント参照)。
+ # そのため、この一覧は「Python 版と同じ結果になるはずの入力」だけ。厳しくした分は Go 側のテストに別に書く。

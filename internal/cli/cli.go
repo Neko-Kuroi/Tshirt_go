@@ -21,8 +21,6 @@ import (
 	"syscall"
 	"time"
 
-	"golang.org/x/sys/unix"
-
 	"tshirt2/internal/auth"
 	"tshirt2/internal/db"
 	"tshirt2/internal/repo"
@@ -346,13 +344,9 @@ func (p *prompter) password(prompt string) (string, error) {
 	fmt.Fprint(p.out, prompt)
 	hidden := false
 	if f, ok := p.stdin.(*os.File); ok {
-		if old, err := unix.IoctlGetTermios(int(f.Fd()), unix.TCGETS); err == nil {
-			noEcho := *old
-			noEcho.Lflag &^= unix.ECHO
-			if err := unix.IoctlSetTermios(int(f.Fd()), unix.TCSETS, &noEcho); err == nil {
-				hidden = true
-				defer unix.IoctlSetTermios(int(f.Fd()), unix.TCSETS, old)
-			}
+		if restore, ok2 := hideEcho(f); ok2 {
+			hidden = true
+			defer restore()
 		}
 	}
 	line, err := p.r.ReadString('\n')
